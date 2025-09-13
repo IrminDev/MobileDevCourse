@@ -105,17 +105,21 @@ Tarea3/
 ## 🖼️ Screenshots
 In the following section there's a snapshot of the project:
 
-**Example:**
-<!--
-### Index Screen
-![index_screen.png](assets/index_screen.png)
+### Index paintings screen
+![paintingMain.png](assets/paintingMain.png)
 
-### Paintings Screen (Pager)
-![paintings_screen.png](assets/paintings_screen.png)
+### Index murals screen
+![muralgMain.png](assets/muralMain.png)
 
-### Art Detail Screen (Parallax)
-![art_detail_screen.png](assets/art_detail_screen.png)
--->
+### Index sculptures screen
+![sculptureMain.png](assets/sculptureMain.png)
+
+### Piece of art preview
+![pieceArtPrev.png](assets/pieceArtPrev.png)
+
+### Piece of art information
+![pieceArtInfo.png](assets/pieceArtInfo.png)
+
 
 ## 🤝 Contributing
 
