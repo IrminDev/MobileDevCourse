@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -21,136 +22,194 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.layout.height
 import androidx.navigation.NavController
-import com.example.tarea3.data.ArtCategory // Import ArtCategory for the 'when' statement
+import com.example.tarea3.data.ArtCategory
 import com.example.tarea3.data.ArtPiece
 import com.example.tarea3.ui.components.DetailItem
-import com.example.tarea3.ui.components.ParallaxImageHeader
+import androidx.compose.material3.Card
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtDetailScreen(
     navController: NavController,
-    artPiece: ArtPiece // Expecting the full ArtPiece object
+    artPiece: ArtPiece,
+    isDarkMode: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
-
-    // Configuration for the parallax header
-    val headerHeight = 300.dp // Define the height of the parallax image area
+    val headerHeight = 320.dp
     val headerHeightPx = with(LocalDensity.current) { headerHeight.toPx() }
-    // Min height for the header when collapsed (e.g., TopAppBar height)
     val minCollapsedHeaderHeightPx = with(LocalDensity.current) { TopAppBarDefaults.TopAppBarExpandedHeight.toPx() }
 
-    var headerOffsetPx by remember { mutableFloatStateOf(0f) } // Raw pixel offset for the header
+    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
 
-    // Nested scroll connection to listen to scroll events
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
                 val newOffset = headerOffsetPx + delta
-                // Coerce the offset:
-                // min value: -(headerHeightPx - minCollapsedHeaderHeightPx) -> header fully collapsed
-                // max value: 0f -> header fully expanded
                 headerOffsetPx = newOffset.coerceIn(-(headerHeightPx - minCollapsedHeaderHeightPx), 0f)
-
-                // Consume the scroll delta if the header is still collapsing or expanding
                 return if (headerOffsetPx > -(headerHeightPx - minCollapsedHeaderHeightPx) && headerOffsetPx < 0f) {
-                    Offset(0f, delta) // Consume the vertical scroll
+                    Offset(0f, delta)
                 } else {
-                    Offset.Zero // Don't consume if header is fully collapsed or expanded
+                    Offset.Zero
                 }
             }
         }
     }
 
-    // Normalized scroll offset for alpha/other animations (0.0 fully expanded, 1.0 fully collapsed)
     val topBarAlpha = ((-headerOffsetPx) / (headerHeightPx - minCollapsedHeaderHeightPx)).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .nestedScroll(nestedScrollConnection) // Apply the nested scroll behavior to the Box
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
+            .nestedScroll(nestedScrollConnection)
     ) {
-        // The Parallax Image Header
-        // It moves up with the scroll (its y offset changes)
-        // and also has an internal parallax effect via its 'scrollOffsetPx' prop
-        ParallaxImageHeader(
-            imageRes = artPiece.imageRes,
-            headerHeight = headerHeight,
-            scrollOffsetPx = headerOffsetPx, // Pass the raw pixel offset for internal parallax calculation
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(headerHeight) // Ensure this Box matches the ParallaxImageHeader's intended height
-                .offset(y = (headerOffsetPx / LocalDensity.current.density).dp) // Move the header up as we scroll
-        )
-
-        // The scrollable content (details of the artwork)
+        Box(modifier = Modifier.height(headerHeight)) {
+            AsyncImage(
+                model = artPiece.imageRes,
+                contentDescription = artPiece.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(headerHeight)
+                    .offset(y = (headerOffsetPx / LocalDensity.current.density).dp)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(headerHeight)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                            ),
+                            startY = 0f,
+                            endY = 800f
+                        )
+                    )
+            )
+        }
         LazyColumn(
             state = lazyListState,
-            contentPadding = PaddingValues(top = headerHeight) // Start content below the initial header height
+            contentPadding = PaddingValues(top = headerHeight)
         ) {
             item {
-                Column(
+                Card(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface) // Important for content to not be transparent
-                        .padding(all = 16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .shadow(8.dp, shape = MaterialTheme.shapes.medium),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = CardDefaults.cardElevation(8.dp)
                 ) {
-                    // Artwork Title
-                    Text(
-                        text = artPiece.title,
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    // Artist Name using DetailItem
-                    DetailItem(
-                        label = "Artist",
-                        value = artPiece.artist,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    // Key Details (Year, Location, Material) using DetailItem
-                    DetailItem(
-                        label = when (artPiece.category) { // Dynamic label based on category
-                            ArtCategory.PAINTING -> "Year"
-                            ArtCategory.MURAL -> "Location & Year"
-                            ArtCategory.SCULPTURE -> "Material & Period"
-                        },
-                        value = artPiece.details,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    // Section Title for Full Description
-                    Text(
-                        text = "About the Artwork",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold, // Or Bold
-                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-                    )
-
-                    // Full Description
-                    Text(
-                        text = artPiece.fullDescription,
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 24.sp // Improves readability for longer text
-                    )
-
-                    // Add some space at the bottom to ensure all content can scroll above
-                    // any bottom navigation bars or to give a bit of breathing room.
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(20.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = artPiece.title,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { /* TODO: Acción de favorito */ }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Favorite,
+                                    contentDescription = "Favorito",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row {
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(text = artPiece.category.name) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(text = artPiece.artist) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        DetailItem(
+                            label = when (artPiece.category) {
+                                ArtCategory.PAINTING -> "Año"
+                                ArtCategory.MURAL -> "Ubicación & Año"
+                                ArtCategory.SCULPTURE -> "Material & Periodo"
+                            },
+                            value = artPiece.details,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Text(
+                            text = "Sobre la obra",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                        )
+                        Text(
+                            text = artPiece.fullDescription,
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 24.sp
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.End,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { /* TODO: Acción de compartir */ }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Share,
+                                    contentDescription = "Compartir",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
 
-        // The Collapsing TopAppBar - Sits on top and animates with the scroll
         TopAppBar(
             title = {
                 Text(
                     artPiece.title,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = topBarAlpha), // Fade in title text
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = topBarAlpha),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -159,26 +218,28 @@ fun ArtDetailScreen(
                 IconButton(onClick = { navController.navigateUp() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        // Icon color changes for better visibility against the image vs. collapsed app bar
-                        tint = Color.White.copy(alpha = 1f - topBarAlpha) // Fade to onSurface as bar appears
+                        contentDescription = "Atrás",
+                        tint = Color.White.copy(alpha = 1f - topBarAlpha)
                             .compositeOver(MaterialTheme.colorScheme.onSurface.copy(alpha = topBarAlpha))
                     )
                 }
             },
+            actions = {
+                IconButton(onClick = onToggleTheme) {
+                    Icon(
+                        imageVector = if (isDarkMode) Icons.Filled.Star else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (isDarkMode) "Cambiar a modo claro" else "Cambiar a modo oscuro",
+                        tint = Color.White.copy(alpha = 1f - topBarAlpha)
+                            .compositeOver(MaterialTheme.colorScheme.primary.copy(alpha = topBarAlpha))
+                    )
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = topBarAlpha), // Fade in background
-                scrolledContainerColor = MaterialTheme.colorScheme.surface // Solid when fully scrolled/collapsed
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = topBarAlpha),
+                scrolledContainerColor = MaterialTheme.colorScheme.surface
             ),
             modifier = Modifier
                 .fillMaxWidth()
-            // The TopAppBar itself doesn't need an offset if the ParallaxImageHeader is offset correctly
-            // and the LazyColumn starts below it. However, if you want the TopAppBar to "stick"
-            // at a certain point during collapse, you might adjust its offset too.
-            // For simplicity, here it just fades in/out.
-            // If the ParallaxImageHeader is moving, this TopAppBar will appear to "stay" at the top
-            // while its content (title, background) animates.
         )
     }
 }
-

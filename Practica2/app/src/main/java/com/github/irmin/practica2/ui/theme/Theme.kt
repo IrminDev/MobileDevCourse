@@ -33,21 +33,56 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+// Define themes for Kotlin, Java, Python, and C++
+private val KotlinColorScheme = lightColorScheme(
+    primary = KotlinPrimary,
+    onPrimary = KotlinOnPrimary,
+    secondary = PurpleGrey40,
+    onSecondary = KotlinOnPrimary,
+    tertiary = Pink40,
+    onTertiary = KotlinOnPrimary
+)
+
+private val JavaColorScheme = lightColorScheme(
+    primary = JavaPrimary,
+    onPrimary = JavaOnPrimary,
+    secondary = PurpleGrey40,
+    onSecondary = JavaOnPrimary,
+    tertiary = Pink40,
+    onTertiary = JavaOnPrimary
+)
+
+private val PythonColorScheme = lightColorScheme(
+    primary = PythonPrimary,
+    onPrimary = PythonOnPrimary,
+    secondary = PurpleGrey40,
+    onSecondary = PythonOnPrimary,
+    tertiary = Pink40,
+    onTertiary = PythonOnPrimary
+)
+
+private val CppColorScheme = lightColorScheme(
+    primary = CppPrimary,
+    onPrimary = CppOnPrimary,
+    secondary = PurpleGrey40,
+    onSecondary = CppOnPrimary,
+    tertiary = Pink40,
+    onTertiary = CppOnPrimary
+)
+
 @Composable
 fun Practica2Theme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    selectedTheme: String = "Default",
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val colorScheme = when (selectedTheme) {
+        "Kotlin" -> KotlinColorScheme
+        "Java" -> JavaColorScheme
+        "Python" -> PythonColorScheme
+        "C++" -> CppColorScheme
+        else -> if (darkTheme) DarkColorScheme else LightColorScheme
     }
 
     MaterialTheme(

@@ -8,14 +8,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tarea3.ArtGalleryIndexScreen
-import com.example.tarea3.data.ArtRepository // Essential for fetching data
-import com.example.tarea3.ui.screens.ArtDetailScreen // The new detail screen
+import com.example.tarea3.data.ArtRepository
+import com.example.tarea3.ui.screens.ArtDetailScreen
 import com.example.tarea3.ui.screens.MuralsScreen
 import com.example.tarea3.ui.screens.PaintingsScreen
 import com.example.tarea3.ui.screens.SculpturesScreen
+import com.example.tarea3.ui.theme.ThemeViewModel
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    onToggleTheme: () -> Unit,
+    isDarkMode: Boolean
+) {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -34,36 +38,25 @@ fun AppNavigation() {
             SculpturesScreen(navController = navController)
         }
 
-        // Corrected and updated ArtDetail composable
         composable(
-            route = AppRoutes.ArtDetail.route, // This should be "art_detail/{artId}"
+            route = AppRoutes.ArtDetail.route,
             arguments = listOf(navArgument("artId") {
                 type = NavType.StringType
-                nullable = false // artId should not be null
+                nullable = false
             })
         ) { backStackEntry ->
-            // Retrieve the artId argument
             val artId = backStackEntry.arguments?.getString("artId")
 
-            // It's crucial that artId is not null here.
-            // If it can be, you'd need more robust error handling or make it non-nullable in the route.
             if (artId != null) {
-                // Find the art piece from your repository using the artId
                 val artPiece = ArtRepository.findArtPieceById(artId)
 
                 if (artPiece != null) {
-                    // Pass the fetched artPiece to the new ArtDetailScreen
-                    ArtDetailScreen(artPiece = artPiece, navController = navController)
+                    ArtDetailScreen(artPiece = artPiece, navController = navController, onToggleTheme = onToggleTheme, isDarkMode = isDarkMode)
                 } else {
-                    // Handle the case where the artId is valid but no art piece is found
-                    // This could be a Text composable or navigate back
                     Text("Error: Art piece with ID '$artId' not found.")
-                    // Consider navController.popBackStack() or navigating to an error screen
                 }
             } else {
-                // Handle the case where artId is null (shouldn't happen if argument is non-nullable)
                 Text("Error: Art ID is missing in navigation.")
-                // Consider navController.popBackStack()
             }
         }
     }

@@ -1,9 +1,17 @@
 package com.example.tarea3.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -17,36 +25,55 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember // Keep this import
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-// Import classes from your data layer
 import com.example.tarea3.data.ArtCategory
 import com.example.tarea3.data.ArtPiece
 import com.example.tarea3.data.ArtRepository
 import com.example.tarea3.navigation.AppRoutes
-// Import navigation routes
-// Import your UI components
 import com.example.tarea3.ui.components.FullScreenImageWithGradient
 import com.example.tarea3.ui.components.InfoCard
 import com.example.tarea3.ui.components.PagerIndicator
+import com.example.tarea3.ui.components.ThemeToggleButton
+import com.example.tarea3.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MuralsScreen(navController: NavController) {
-    // Fetch murals data from the ArtRepository
+fun MuralsScreen(
+    navController: NavController,
+    themeViewModel: ThemeViewModel = viewModel()
+) {
+    val isDarkMode by themeViewModel.isDarkMode.collectAsState()
     val murals = remember { ArtRepository.getArtPieces(ArtCategory.MURAL) }
 
-    // If there are no murals, you might want to display a message
+    // If there are no murals, show a styled empty state
     if (murals.isEmpty()) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Murals") },
+                    title = {
+                        Text(
+                            "Murales",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                "Volver",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -55,18 +82,31 @@ fun MuralsScreen(navController: NavController) {
                         navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No murals available at the moment.")
+                Text(
+                    "No hay murales disponibles en este momento.",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             }
         }
-        return // Exit if no murals
+        return
     }
 
     val pagerState = rememberPagerState(pageCount = { murals.size })
@@ -74,12 +114,19 @@ fun MuralsScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Murals") },
+                title = {
+                    Text(
+                        "Murales",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
@@ -89,7 +136,8 @@ fun MuralsScreen(navController: NavController) {
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -100,38 +148,66 @@ fun MuralsScreen(navController: NavController) {
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { page ->
-                val muralArtPiece = murals[page] // This is now an ArtPiece
+                val muralArtPiece = murals[page]
                 MuralPage(
                     artPiece = muralArtPiece,
-                    navController = navController // Pass NavController for navigation
+                    navController = navController
                 )
             }
 
-            PagerIndicator(
-                pageCount = pagerState.pageCount,
-                currentPage = pagerState.currentPage,
-                modifier = Modifier.align(Alignment.BottomCenter)
+            // Animated pager indicator
+            AnimatedVisibility(
+                visible = murals.size > 1,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(500)
+                ) + fadeIn(tween(500)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                ) + fadeOut(tween(300))
+            ) {
+                PagerIndicator(
+                    pageCount = pagerState.pageCount,
+                    currentPage = pagerState.currentPage
+                )
+            }
+
+            // Theme toggle button in the top right
+            ThemeToggleButton(
+                isDarkMode = isDarkMode,
+                onToggle = { themeViewModel.toggleTheme() },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .statusBarsPadding()
             )
         }
     }
 }
 
 @Composable
-fun MuralPage(artPiece: ArtPiece, navController: NavController) { // Now accepts ArtPiece and NavController
+fun MuralPage(artPiece: ArtPiece, navController: NavController) {
     FullScreenImageWithGradient(imageRes = artPiece.imageRes) {
-        InfoCard(
-            title = artPiece.title,
-            // Use shortDescription for the preview in the gallery
-            description = artPiece.shortDescription,
-            buttonText = "VIEW DETAILS", // Or "LEARN MORE"
-            onButtonClick = {
-                // Navigate to the ArtDetail screen using the artPiece's id
-                // Ensure AppRoutes.ArtDetail.createRoute correctly forms the route string
-                navController.navigate(AppRoutes.ArtDetail.createRoute(
-                    artPiece.id
-                ))
-            },
-            modifier = Modifier.align(Alignment.BottomStart)
-        )
+        AnimatedVisibility(
+            visible = true,
+            modifier = Modifier.align(Alignment.BottomStart),
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(800)
+            ) + fadeIn(tween(800))
+        ) {
+            InfoCard(
+                title = artPiece.title,
+                description = artPiece.shortDescription,
+                buttonText = "VER DETALLES",
+                onButtonClick = {
+                    navController.navigate(AppRoutes.ArtDetail.createRoute(
+                        artPiece.id
+                    ))
+                }
+            )
+        }
     }
 }

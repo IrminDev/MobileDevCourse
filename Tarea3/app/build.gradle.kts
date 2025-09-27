@@ -28,13 +28,10 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = "18"
-    }
     buildFeatures {
         compose = true
     }
@@ -54,8 +51,12 @@ dependencies {
     implementation(libs.coil3.coil.network)
     implementation(libs.glance.material3)
     implementation(libs.glance)
+    implementation(libs.datastore.preferences)
     implementation(libs.glance.appwidget)
     implementation(libs.jetbrains.navigation.compose)
+    implementation(libs.accompanist.systemuicontroller)
+    implementation(libs.lottie.compose)
+    implementation(libs.accompanist.pager.indicators)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
